@@ -15,6 +15,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.example.tarun.wifisetup.adapter.WifiListAdapter;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -45,16 +48,15 @@ public class MainActivityJava extends AppCompatActivity {
 
 
         mWifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        if (!mWifiManager.isWifiEnabled())
-        {
+        if (!mWifiManager.isWifiEnabled()) {
             Toast.makeText(getApplicationContext(), "wifi is disabled..making it enabled", Toast.LENGTH_LONG).show();
             mWifiManager.setWifiEnabled(true);
         }
 
         registerReceiver(mBroadcastReceiver, new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
-        mWifiManager.startScan();
-        Toast.makeText(MainActivityJava.this, "Start Scan", Toast.LENGTH_SHORT).show();
+        refreshScan();
+       // Toast.makeText(MainActivityJava.this, "Start Scan", Toast.LENGTH_SHORT).show();
     }
 
     /**
@@ -63,11 +65,26 @@ public class MainActivityJava extends AppCompatActivity {
     private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            if (mResults != null)
+                mResults.clear();
             Toast.makeText(MainActivityJava.this, "Stop Scan", Toast.LENGTH_SHORT).show();
             mResults = mWifiManager.getScanResults();
-            size = mResults.size();
+            size = mResults.size()-1;
             Toast.makeText(MainActivityJava.this, "Available WiFi networks: "
-                    +mResults.size(), Toast.LENGTH_SHORT).show();
+                    + mResults.size(), Toast.LENGTH_SHORT).show();
+            List<String> list = new ArrayList<>();
+            while (size >= 0) {
+                list.add(mResults.get(size).SSID);
+                size --;
+            }
+            if (mAdapter == null) {
+                mAdapter = new WifiListAdapter(list);
+                mAdapter.notifyDataSetChanged();
+                mRecyclerView.setAdapter(mAdapter);
+            } else {
+                WifiListAdapter adapter = (WifiListAdapter) mAdapter;
+                adapter.swap(list);
+            }
         }
     };
 
@@ -85,6 +102,7 @@ public class MainActivityJava extends AppCompatActivity {
             case R.id.action_refresh:
                 Toast.makeText(this, "Refresh selected", Toast.LENGTH_SHORT)
                         .show();
+                refreshScan();
                 break;
 
             default:
@@ -95,25 +113,8 @@ public class MainActivityJava extends AppCompatActivity {
     }
 
     private void refreshScan() {
-        mResults.clear();
         mWifiManager.startScan();
-
         Toast.makeText(this, "Scanning...." + size, Toast.LENGTH_SHORT).show();
-        try
-        {
-            size = size - 1;
-            while (size >= 0)
-            {
-//                HashMap<String, String> item = new HashMap<String, String>();
-//                item.put(ITEM_KEY, results.get(size).SSID + "  " + results.get(size).capabilities);
-//
-//                arraylist.add(item);
-//                size--;
-//                adapter.notifyDataSetChanged();
-            }
-        }
-        catch (Exception e)
-        { }
     }
 
     @Override
